@@ -1,97 +1,69 @@
+// Improved HTML Code
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Urban Clicker 3D</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Video Game</title>
     <style>
-        body { margin: 0; overflow: hidden; font-family: sans-serif; }
-        #ui { position: absolute; top: 20px; left: 20px; color: white; text-shadow: 2px 2px 4px #000; pointer-events: none; }
-        #click-area { position: absolute; bottom: 20px; width: 100%; text-align: center; }
-        button { padding: 15px 30px; font-size: 20px; cursor: pointer; pointer-events: auto; }
+        body {
+            margin: 0;
+            overflow: hidden;
+        }
+        #gameArea {
+            position: relative;
+            height: 100vh;
+            background-color: #f0f0f0;
+        }
+        .clickable {
+            cursor: pointer;
+        }
     </style>
 </head>
 <body>
+<div id="gameArea"></div>
+<script>
+    const gameArea = document.getElementById('gameArea');
+    let gameObjects = [];
 
-    <div id="ui">
-        <h1>Money: $<span id="score">0</span></h1>
-        <p>Use WASD to Move | Click the Button to Earn</p>
-    </div>
+    function createGameObject() {
+        const obj = document.createElement('div');
+        obj.classList.add('clickable');
+        obj.style.width = '50px';
+        obj.style.height = '50px';
+        obj.style.backgroundColor = 'blue';
+        obj.style.position = 'absolute';
+        obj.style.left = Math.random() * (window.innerWidth - 50) + 'px';
+        obj.style.top = Math.random() * (window.innerHeight - 50) + 'px';
 
-    <div id="click-area">
-        <button onclick="earnMoney()">HUSTLE ($1)</button>
-    </div>
+        obj.addEventListener('click', function() {
+            // Feedback on click
+            alert('Object Clicked!');
+            obj.remove(); // Remove object after click
+        });
 
-    <script type="importmap">
-        { "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js" } }
-    </script>
+        gameArea.appendChild(obj);
+        gameObjects.push(obj);
+    }
 
-    <script type="module">
-        import * as THREE from 'three';
+    function resizeHandler() {
+        // Handle window resize
+        gameObjects.forEach(obj => {
+            const rect = obj.getBoundingClientRect();
+            if (rect.right > window.innerWidth) {
+                obj.style.left = (window.innerWidth - rect.width) + 'px';
+            }
+            if (rect.bottom > window.innerHeight) {
+                obj.style.top = (window.innerHeight - rect.height) + 'px';
+            }
+        });
+    }
 
-        // 1. SETUP SCENE
-        const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x87ceeb); // Sky blue
-        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-        const renderer = new THREE.WebGLRenderer({ antialias: true });
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        document.body.appendChild(renderer.domElement);
+    window.addEventListener('resize', resizeHandler);
 
-        // 2. LIGHTING
-        const light = new THREE.DirectionalLight(0xffffff, 1);
-        light.position.set(5, 10, 7.5);
-        scene.add(light);
-        scene.add(new THREE.AmbientLight(0x404040));
-
-        // 3. THE "URBAN" GROUND (Street)
-        const groundGeo = new THREE.PlaneGeometry(100, 100);
-        const groundMat = new THREE.MeshStandardMaterial({ color: 0x333333 });
-        const ground = new THREE.Mesh(groundGeo, groundMat);
-        ground.rotation.x = -Math.PI / 2;
-        scene.add(ground);
-
-        // 4. THE PLAYER (Third Person)
-        const playerGeo = new THREE.BoxGeometry(1, 2, 1);
-        const playerMat = new THREE.MeshStandardMaterial({ color: 0xff0000 });
-        const player = new THREE.Mesh(playerGeo, playerMat);
-        player.position.y = 1;
-        scene.add(player);
-
-        // 5. BUILDINGS (Simple Loops)
-        for(let i = 0; i < 10; i++) {
-            const h = Math.random() * 10 + 2;
-            const bGeo = new THREE.BoxGeometry(4, h, 4);
-            const bMat = new THREE.MeshStandardMaterial({ color: 0x888888 });
-            const building = new THREE.Mesh(bGeo, bMat);
-            building.position.set(Math.random() * 40 - 20, h/2, Math.random() * 40 - 20);
-            scene.add(building);
-        }
-
-        // 6. CONTROLS & CAMERA
-        const keys = {};
-        window.addEventListener('keydown', (e) => keys[e.code] = true);
-        window.addEventListener('keyup', (e) => keys[e.code] = false);
-
-        let score = 0;
-        window.earnMoney = () => {
-            score += 1;
-            document.getElementById('score').innerText = score;
-        };
-
-        function animate() {
-            requestAnimationFrame(animate);
-
-            // Movement Logic
-            if(keys['KeyW']) player.position.z -= 0.1;
-            if(keys['KeyS']) player.position.z += 0.1;
-            if(keys['KeyA']) player.position.x -= 0.1;
-            if(keys['KeyD']) player.position.x += 0.1;
-
-            // Third Person Camera Follow
-            camera.position.set(player.position.x, player.position.y + 5, player.position.z + 10);
-            camera.lookAt(player.position);
-
-            renderer.render(scene, camera);
-        }
-        animate();
-    </script>
+    // Create new game objects
+    setInterval(createGameObject, 1000);
+    resizeHandler(); // Initial check
+</script>
 </body>
 </html>
