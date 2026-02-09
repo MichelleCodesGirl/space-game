@@ -1,69 +1,43 @@
-// Improved HTML Code
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Video Game</title>
-    <style>
-        body {
-            margin: 0;
-            overflow: hidden;
-        }
-        #gameArea {
-            position: relative;
-            height: 100vh;
-            background-color: #f0f0f0;
-        }
-        .clickable {
-            cursor: pointer;
-        }
-    </style>
-</head>
-<body>
-<div id="gameArea"></div>
-<script>
-    const gameArea = document.getElementById('gameArea');
-    let gameObjects = [];
+// Improved HTML Code for Video Game
 
-    function createGameObject() {
-        const obj = document.createElement('div');
-        obj.classList.add('clickable');
-        obj.style.width = '50px';
-        obj.style.height = '50px';
-        obj.style.backgroundColor = 'blue';
-        obj.style.position = 'absolute';
-        obj.style.left = Math.random() * (window.innerWidth - 50) + 'px';
-        obj.style.top = Math.random() * (window.innerHeight - 50) + 'px';
-
-        obj.addEventListener('click', function() {
-            // Feedback on click
-            alert('Object Clicked!');
-            obj.remove(); // Remove object after click
-        });
-
-        gameArea.appendChild(obj);
-        gameObjects.push(obj);
+// Game Configuration Object
+the gameConfig = {
+    width: 800,
+    height: 600,
+    backgroundColor: '#000000',
+    boundary: {
+        top: 0,
+        right: 800,
+        bottom: 600,
+        left: 0
     }
+};
 
-    function resizeHandler() {
-        // Handle window resize
-        gameObjects.forEach(obj => {
-            const rect = obj.getBoundingClientRect();
-            if (rect.right > window.innerWidth) {
-                obj.style.left = (window.innerWidth - rect.width) + 'px';
-            }
-            if (rect.bottom > window.innerHeight) {
-                obj.style.top = (window.innerHeight - rect.height) + 'px';
-            }
-        });
+// Function to handle boundary checking
+function checkBoundaries(x, y) {
+    if (x < gameConfig.boundary.left || x > gameConfig.boundary.right ||
+        y < gameConfig.boundary.top || y > gameConfig.boundary.bottom) {
+        console.log('Out of bounds');
+        return false;
+    }  
+    return true;
+}
+
+// Window resize handler
+function handleResize() {
+    gameConfig.width = window.innerWidth;
+    gameConfig.height = window.innerHeight;
+    console.log('Window resized to: ' + gameConfig.width + 'x' + gameConfig.height);
+}
+
+// Click feedback implementation
+document.addEventListener('click', function(event) {
+    const x = event.clientX;
+    const y = event.clientY;
+    if (checkBoundaries(x, y)) {
+        console.log('Clicked at: (' + x + ',' + y + ')');
     }
+});
 
-    window.addEventListener('resize', resizeHandler);
-
-    // Create new game objects
-    setInterval(createGameObject, 1000);
-    resizeHandler(); // Initial check
-</script>
-</body>
-</html>
+// Attach window resize handler
+window.addEventListener('resize', handleResize);
