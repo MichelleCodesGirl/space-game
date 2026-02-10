@@ -1,36 +1,41 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>ZENITH HORIZON: SPACE TYCOON</title>
+    <title>EASY SPACE TYCOON</title>
     <style>
-        :root { --neon: #00f2ff; --money: #00ff88; --glass: rgba(0, 10, 20, 0.85); }
-        body { margin: 0; overflow: hidden; background: #000; font-family: 'Orbitron', sans-serif; color: white; cursor: crosshair; }
+        body { margin: 0; overflow: hidden; background: #e0e0ff; font-family: sans-serif; }
         
-        #hud { position: absolute; top: 20px; left: 20px; display: flex; flex-direction: column; gap: 10px; pointer-events: none; }
-        .glass { background: var(--glass); padding: 20px; border-left: 4px solid var(--neon); backdrop-filter: blur(15px); border: 1px solid rgba(0,242,255,0.15); }
+        /* BIG CLEAR UI */
+        #hud { 
+            position: absolute; top: 20px; left: 20px; 
+            background: white; padding: 20px; border: 5px solid #000;
+            box-shadow: 10px 10px 0px #555; pointer-events: none;
+        }
+        #money-label { font-size: 20px; font-weight: bold; color: #555; }
+        #money-val { font-size: 50px; font-weight: 900; color: #00aa00; display: block; }
         
-        #money-val { font-size: 38px; color: var(--money); font-weight: 900; }
-        #rank { font-size: 11px; letter-spacing: 3px; color: var(--neon); margin-bottom: 5px; }
+        /* EASY TO READ PRICE TAGS */
+        .price-tag { 
+            position: absolute; background: yellow; color: black; 
+            padding: 10px 20px; border: 3px solid black; font-size: 18px; 
+            font-weight: bold; transform: translate(-50%, -50%); 
+        }
 
-        .price-tag { position: absolute; color: white; background: var(--glass); padding: 12px 18px; 
-                     border: 1px solid var(--neon); font-size: 10px; text-align: center; pointer-events: none; 
-                     transform: translate(-50%, -50%); border-radius: 4px; box-shadow: 0 0 15px rgba(0,242,255,0.2); }
-        
-        #bottom-bar { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); font-size: 10px; opacity: 0.5; letter-spacing: 2px; }
+        #hint { 
+            position: absolute; bottom: 20px; width: 100%; text-align: center; 
+            font-size: 24px; font-weight: bold; background: white; padding: 10px 0; border-top: 4px solid black;
+        }
     </style>
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;900&display=swap" rel="stylesheet">
 </head>
 <body>
 
     <div id="hud">
-        <div class="glass">
-            <div id="rank">RANK: GALACTIC COMMANDER</div>
-            <div id="money-val">§ 5,000</div>
-            <div id="income-val" style="font-size: 12px; color: var(--neon); opacity: 0.8;">NET: §0/SEC</div>
-        </div>
+        <span id="money-label">MONEY:</span>
+        <span id="money-val">$0</span>
+        <span id="income-val" style="font-size: 18px; font-weight: bold; color: blue;">+ $0 per second</span>
     </div>
 
-    <div id="bottom-bar">SYSTEMS NOMINAL | CLICK CORE FOR §250 | SPACE TO JUMP</div>
+    <div id="hint">WASD to Move | SPACE to Jump | Walk into Yellow Circles to Buy</div>
     <div id="labels-container"></div>
 
     <script type="importmap">
@@ -40,138 +45,105 @@
     <script type="module">
         import * as THREE from 'three';
 
-        // --- CORE ENGINE ---
+        // --- VISUALS (BRIGHT AND EASY) ---
         const scene = new THREE.Scene();
-        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 5000);
+        scene.background = new THREE.Color(0x87ceeb); // Bright Blue Sky
+
+        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
         const renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.toneMapping = THREE.ReinhardToneMapping;
         document.body.appendChild(renderer.domElement);
 
-        // --- DYNAMIC SUN (DAY/NIGHT) ---
-        const sunPivot = new THREE.Group();
-        scene.add(sunPivot);
-        const sun = new THREE.DirectionalLight(0xffffff, 2);
-        sun.position.set(0, 300, 500);
-        sunPivot.add(sun);
-        const amb = new THREE.AmbientLight(0x4040ff, 0.3);
-        scene.add(amb);
+        scene.add(new THREE.AmbientLight(0xffffff, 1)); // Very bright light
 
-        // --- ENVIRONMENT ---
-        const starGeo = new THREE.BufferGeometry();
-        const starPos = new Float32Array(50000 * 3);
-        for(let i=0; i<50000*3; i++) starPos[i] = (Math.random()-0.5)*4000;
-        starGeo.setAttribute('position', new THREE.BufferAttribute(starPos, 3));
-        scene.add(new THREE.Points(starGeo, new THREE.PointsMaterial({color: 0xffffff, size: 0.7})));
-
-        const floor = new THREE.Mesh(new THREE.CylinderGeometry(800, 800, 2, 64), new THREE.MeshStandardMaterial({color: 0x050510, roughness: 0.8}));
-        floor.position.y = -1;
+        // --- GROUND ---
+        const floor = new THREE.Mesh(new THREE.PlaneGeometry(1000, 1000), new THREE.MeshStandardMaterial({color: 0xeeeeee}));
+        floor.rotation.x = -Math.PI / 2;
         scene.add(floor);
+        scene.add(new THREE.GridHelper(200, 20, 0x000000, 0xcccccc));
 
-        // --- PLAYER & ENTITIES ---
+        // --- PLAYER ---
         const player = new THREE.Group();
-        player.add(new THREE.Mesh(new THREE.CapsuleGeometry(0.5, 1.2), new THREE.MeshStandardMaterial({color: 0xffffff})));
+        const body = new THREE.Mesh(new THREE.BoxGeometry(1, 2, 1), new THREE.MeshStandardMaterial({color: 0xff0000}));
+        body.position.y = 1;
+        player.add(body);
         scene.add(player);
 
-        const bot = new THREE.Mesh(new THREE.OctahedronGeometry(0.4), new THREE.MeshStandardMaterial({color: 0xffcc00, emissive: 0xffcc00, emissiveIntensity: 2}));
-        bot.visible = false;
-        scene.add(bot);
-
-        // --- STATE & TYCOON ---
-        let money = 5000, income = 0, vY = 0, isJumping = false;
-        const keys = {}, buyPads = [], ships = [], asteroids = [];
+        // --- TYCOON LOGIC ---
+        let money = 100;
+        let income = 0;
+        let vY = 0, isJumping = false;
+        const keys = {}, buyPads = [];
         const labelContainer = document.getElementById('labels-container');
 
         function createPad(x, z, cost, name, color, onBuy) {
             const pad = new THREE.Group();
-            pad.add(new THREE.Mesh(new THREE.TorusGeometry(4.5, 0.1, 16, 64), new THREE.MeshBasicMaterial({color: color})));
-            pad.rotation.x = Math.PI/2;
+            const ring = new THREE.Mesh(new THREE.TorusGeometry(3, 0.2, 16, 32), new THREE.MeshBasicMaterial({color: 0xffff00}));
+            ring.rotation.x = Math.PI/2;
+            pad.add(ring);
             pad.position.set(x, 0.1, z);
+            
             const div = document.createElement('div');
             div.className = 'price-tag';
-            div.style.borderColor = `#${color.toString(16)}`;
-            div.innerHTML = `<b>${name}</b><br>§${cost.toLocaleString()}`;
+            div.innerHTML = `${name}<br>$${cost}`;
             labelContainer.appendChild(div);
+
             pad.userData = { cost, active: true, onBuy, div };
             scene.add(pad);
             buyPads.push(pad);
         }
 
-        // --- THE "ZENITH" PROGRESSION ---
-        createPad(50, 0, 5000, "SENTINEL 2.0", 0xffcc00, () => {
-            bot.visible = true;
-            createPad(0, -60, 25000, "STAR-LIFT TOWER", 0x00f2ff, () => {
-                income += 5000;
-                const tower = new THREE.Mesh(new THREE.CylinderGeometry(2, 5, 250), new THREE.MeshStandardMaterial({color: 0x111111}));
-                tower.position.set(0, 125, -100);
-                scene.add(tower);
-                // Add beams
-                const beam = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 500), new THREE.MeshBasicMaterial({color: 0x00f2ff, transparent: true, opacity: 0.2}));
-                beam.position.set(0, 0, -100);
-                scene.add(beam);
+        // --- THE BUILDINGS (BIG AND BOLD) ---
+        createPad(15, 0, 100, "MONEY TOWER", 0x00ff00, () => {
+            income += 20;
+            const b = new THREE.Mesh(new THREE.BoxGeometry(5, 15, 5), new THREE.MeshStandardMaterial({color: 0x00aa00}));
+            b.position.set(15, 7.5, -10);
+            scene.add(b);
+
+            createPad(-15, 0, 500, "MEGA FACTORY", 0xff00ff, () => {
+                income += 100;
+                const b2 = new THREE.Mesh(new THREE.BoxGeometry(10, 20, 10), new THREE.MeshStandardMaterial({color: 0xaa00aa}));
+                b2.position.set(-15, 10, -15);
+                scene.add(b2);
             });
         });
 
-        // --- SYSTEMS ---
-        function spawnAsteroid() {
-            const ast = new THREE.Mesh(new THREE.IcosahedronGeometry(2.5), new THREE.MeshStandardMaterial({color: 0xff4400, emissive: 0xff0000}));
-            ast.position.set((Math.random()-0.5)*500, 60, (Math.random()-0.5)*500);
-            scene.add(ast);
-            asteroids.push(ast);
-        }
-        setInterval(spawnAsteroid, 3000);
-
-        window.addEventListener('keydown', e => keys[e.code] = true);
+        // --- CONTROLS ---
+        window.addEventListener('keydown', e => {
+            keys[e.code] = true;
+            if(e.code === 'Space' && !isJumping) { vY = 0.4; isJumping = true; }
+        });
         window.addEventListener('keyup', e => keys[e.code] = false);
 
         function animate() {
             requestAnimationFrame(animate);
             
-            // Movement Logic
-            const speed = 0.65;
-            if(keys['KeyW']) player.translateZ(speed); if(keys['KeyS']) player.translateZ(-speed);
-            if(keys['KeyA']) player.rotation.y += 0.05; if(keys['KeyD']) player.rotation.y -= 0.05;
-            
-            if(keys['Space'] && !isJumping) { vY = 0.55; isJumping = true; }
-            vY -= 0.025; player.position.y += vY;
+            if(keys['KeyW']) player.translateZ(0.3);
+            if(keys['KeyS']) player.translateZ(-0.3);
+            if(keys['KeyA']) player.rotation.y += 0.05;
+            if(keys['KeyD']) player.rotation.y -= 0.05;
+
+            vY -= 0.02; player.position.y += vY;
             if(player.position.y <= 0) { player.position.y = 0; vY = 0; isJumping = false; }
 
-            // Day/Night Cycle
-            sunPivot.rotation.x += 0.001;
-
-            // Sentinel AI
-            if(bot.visible) {
-                bot.position.lerp(player.position.clone().add(new THREE.Vector3(4, 5, -4)), 0.1);
-                bot.rotation.z += 0.1;
-                asteroids.forEach((ast, i) => {
-                    if(bot.position.distanceTo(ast.position) < 50) {
-                        money += 2500; scene.remove(ast); asteroids.splice(i, 1);
-                    }
-                });
-            }
-
-            // HUD & Economy
             money += income/60;
-            document.getElementById('money-val').innerText = "§ " + Math.floor(money).toLocaleString();
-            document.getElementById('income-val').innerText = `NET: §${Math.floor(income).toLocaleString()}/SEC`;
-
-            asteroids.forEach(ast => { ast.position.y -= 0.2; ast.rotation.y += 0.02; });
+            document.getElementById('money-val').innerText = "$" + Math.floor(money);
+            document.getElementById('income-val').innerText = "+ $" + income + " per second";
 
             buyPads.forEach(pad => {
                 if(!pad.userData.active) return;
-                const v = pad.position.clone().add(new THREE.Vector3(0, 6, 0)).project(camera);
+                const v = pad.position.clone().add(new THREE.Vector3(0, 4, 0)).project(camera);
                 pad.userData.div.style.left = (v.x * 0.5 + 0.5) * window.innerWidth + 'px';
                 pad.userData.div.style.top = (-v.y * 0.5 + 0.5) * window.innerHeight + 'px';
-                if(player.position.distanceTo(pad.position) < 4.5 && money >= pad.userData.cost) {
+                
+                if(player.position.distanceTo(pad.position) < 3.5 && money >= pad.userData.cost) {
                     money -= pad.userData.cost; pad.userData.active = false; pad.userData.div.remove();
                     scene.remove(pad); pad.userData.onBuy();
                 }
             });
 
-            // Camera Smoothing
-            const camTarget = new THREE.Vector3(0, 18, -35).applyMatrix4(player.matrixWorld);
-            camera.position.lerp(camTarget, 0.12);
-            camera.lookAt(player.position.clone().add(new THREE.Vector3(0, 3, 0)));
+            camera.position.lerp(new THREE.Vector3(0, 10, -20).applyMatrix4(player.matrixWorld), 0.1);
+            camera.lookAt(player.position);
             renderer.render(scene, camera);
         }
         animate();
