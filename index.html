@@ -1,34 +1,24 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Space Colony: Urban Clicker</title>
+    <title>SPACE COLONY: THE HUSTLE</title>
     <style>
-        :root { --space-neon: #00d4ff; --plasma: #ff00ff; --bg: #020205; }
-        body { margin: 0; overflow: hidden; background: var(--bg); font-family: 'Courier New', monospace; }
-        
-        #ui { position: absolute; top: 20px; left: 20px; color: white; background: rgba(0, 212, 255, 0.1); 
-               padding: 20px; border-radius: 5px; border: 1px solid var(--space-neon); pointer-events: none;
-               box-shadow: 0 0 15px rgba(0, 212, 255, 0.3); }
-        
-        #money { font-size: 28px; color: var(--space-neon); text-shadow: 0 0 10px var(--space-neon); }
-
-        #shop { position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); display: flex; gap: 20px; }
-        .btn { background: rgba(255, 0, 255, 0.2); color: white; border: 1px solid var(--plasma); 
-               padding: 15px 30px; cursor: pointer; border-radius: 50px; font-weight: bold; transition: 0.3s; }
-        .btn:hover { background: var(--plasma); box-shadow: 0 0 20px var(--plasma); }
+        body { margin: 0; overflow: hidden; background: #020205; font-family: 'Courier New', monospace; }
+        #ui { position: absolute; top: 30px; left: 30px; color: #ff00ff; pointer-events: none; }
+        #credits { font-size: 42px; text-shadow: 0 0 15px #ff00ff; color: #fff; }
+        .stats { font-size: 14px; color: #00d4ff; margin-top: 5px; }
+        #msg { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); 
+               color: #00d4ff; font-size: 20px; opacity: 0; transition: 0.5s; pointer-events: none; }
     </style>
 </head>
 <body>
 
     <div id="ui">
-        <div style="font-size: 10px; letter-spacing: 2px;">GALACTIC CREDITS</div>
-        <div id="money">0.00</div>
-        <div id="mission" style="margin-top:10px; font-size: 12px; color: var(--plasma);">MISSION: EXPAND COLONY</div>
+        <div style="letter-spacing: 3px; font-size: 12px;">CRITICAL ASSETS</div>
+        <div id="credits">§ 0</div>
+        <div id="orb-count" class="stats">ORBS COLLECTED: 0</div>
     </div>
-
-    <div id="shop">
-        <button class="btn" onclick="buildSilo()">DEPLOY SPACE SILO (100)</button>
-    </div>
+    <div id="msg">+§100 BOUNTY</div>
 
     <script type="importmap">
         { "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js" } }
@@ -37,118 +27,108 @@
     <script type="module">
         import * as THREE from 'three';
 
-        // --- SPACE SETUP ---
         const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x020205);
-        const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+        scene.fog = new THREE.FogExp2(0x0a001a, 0.04);
+        const camera = new THREE.PerspectiveCamera(65, window.innerWidth / window.innerHeight, 0.1, 1000);
         const renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         document.body.appendChild(renderer.domElement);
 
-        // --- STARS (Background) ---
+        // --- THE COSMOS ---
         const starGeo = new THREE.BufferGeometry();
-        const starCoords = [];
-        for(let i=0; i<5000; i++) {
-            starCoords.push((Math.random()-0.5)*1000, (Math.random()-0.5)*1000, (Math.random()-0.5)*1000);
-        }
-        starGeo.setAttribute('position', new THREE.Float32BufferAttribute(starCoords, 3));
-        const stars = new THREE.Points(starGeo, new THREE.PointsMaterial({color: 0xffffff, size: 0.7}));
-        scene.add(stars);
+        const starPoints = [];
+        for(let i=0; i<6000; i++) starPoints.push((Math.random()-0.5)*800, (Math.random()-0.5)*800, (Math.random()-0.5)*800);
+        starGeo.setAttribute('position', new THREE.Float32BufferAttribute(starPoints, 3));
+        scene.add(new THREE.Points(starGeo, new THREE.PointsMaterial({color: 0x00d4ff, size: 0.6})));
 
-        // --- PLANET SURFACE ---
-        const surface = new THREE.Mesh(
-            new THREE.PlaneGeometry(200, 200),
-            new THREE.MeshStandardMaterial({ color: 0x111115, roughness: 0.8 })
-        );
-        surface.rotation.x = -Math.PI / 2;
-        scene.add(surface);
-
-        const grid = new THREE.GridHelper(200, 40, 0x00d4ff, 0x050505);
-        grid.position.y = 0.01;
+        // --- NEON PLANET ---
+        const floor = new THREE.Mesh(new THREE.PlaneGeometry(1000, 1000), new THREE.MeshStandardMaterial({ color: 0x050505 }));
+        floor.rotation.x = -Math.PI / 2;
+        scene.add(floor);
+        const grid = new THREE.GridHelper(200, 40, 0xff00ff, 0x101020);
         scene.add(grid);
 
-        // --- THE PLAYER (Space Suit) ---
+        // --- ASTRONAUT ---
         const player = new THREE.Group();
-        const body = new THREE.Mesh(new THREE.CapsuleGeometry(0.4, 0.8, 4, 8), new THREE.MeshStandardMaterial({color: 0xeeeeee}));
-        body.position.y = 0.8;
-        player.add(body);
-        const visor = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.2, 0.2), new THREE.MeshBasicMaterial({color: 0x00d4ff}));
-        visor.position.set(0, 1.2, 0.3);
+        const suit = new THREE.Mesh(new THREE.CapsuleGeometry(0.4, 0.8), new THREE.MeshStandardMaterial({color: 0xffffff}));
+        suit.position.y = 0.9;
+        player.add(suit);
+        const visor = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.2, 0.2), new THREE.MeshBasicMaterial({color: 0xff00ff}));
+        visor.position.set(0, 1.3, 0.3);
         player.add(visor);
         scene.add(player);
 
-        // --- LIGHTING ---
-        scene.add(new THREE.AmbientLight(0x404040, 2));
-        const moonLight = new THREE.PointLight(0x00d4ff, 2, 100);
-        moonLight.position.set(20, 20, 20);
-        scene.add(moonLight);
+        // --- GAMEPLAY ELEMENTS ---
+        let score = 0;
+        let orbsFound = 0;
+        const orbs = [];
+        function spawnOrb() {
+            const orb = new THREE.Mesh(new THREE.IcosahedronGeometry(0.5, 1), new THREE.MeshBasicMaterial({color: 0x00d4ff, wireframe: true}));
+            orb.position.set(Math.random()*100-50, 1, Math.random()*100-50);
+            scene.add(orb);
+            orbs.push(orb);
+        }
+        for(let i=0; i<15; i++) spawnOrb();
 
-        // --- ECONOMY ---
-        let credits = 0;
+        // --- PHYSICS & LIGHT ---
+        scene.add(new THREE.AmbientLight(0x202020));
+        const pLight = new THREE.PointLight(0xff00ff, 50, 15);
+        player.add(pLight);
+
+        // --- CONTROLS ---
         const keys = {};
-        window.addEventListener('keydown', (e) => keys[e.code] = true);
+        let py = 0, vY = 0, isJumping = false;
+        window.addEventListener('keydown', (e) => {
+            keys[e.code] = true;
+            if(e.code === 'Space' && !isJumping) { vY = 0.25; isJumping = true; }
+        });
         window.addEventListener('keyup', (e) => keys[e.code] = false);
 
-        window.buildSilo = () => {
-            if(credits >= 100) {
-                credits -= 100;
-                spawnBuilding();
-            }
-        };
-
-        function spawnBuilding() {
-            const h = Math.random() * 10 + 5;
-            const b = new THREE.Mesh(new THREE.CylinderGeometry(1.5, 1.5, h, 8), new THREE.MeshStandardMaterial({color: 0x222222}));
-            b.position.set(Math.random()*60-30, h/2, Math.random()*60-30);
-            scene.add(b);
-            
-            // Neon Rings
-            const ring = new THREE.Mesh(new THREE.TorusGeometry(1.6, 0.1, 8, 24), new THREE.MeshBasicMaterial({color: 0xff00ff}));
-            ring.rotation.x = Math.PI/2;
-            ring.position.y = h-1;
-            b.add(ring);
-        }
-
-        // --- ANIMATION LOOP ---
         function animate() {
             requestAnimationFrame(animate);
-
-            // Movement Logic
-            if(keys['KeyW']) player.translateZ(0.15);
-            if(keys['KeyS']) player.translateZ(-0.15);
+            
+            // Movement
+            if(keys['KeyW']) player.translateZ(0.2);
+            if(keys['KeyS']) player.translateZ(-0.2);
             if(keys['KeyA']) player.rotation.y += 0.05;
             if(keys['KeyD']) player.rotation.y -= 0.05;
 
-            // Clicking logic (Automatic earning for now)
-            credits += 0.05;
-            document.getElementById('money').innerText = credits.toFixed(2);
+            // Gravity
+            vY -= 0.01;
+            py += vY;
+            if(py <= 0) { py = 0; vY = 0; isJumping = false; }
+            player.position.y = py;
 
-            // Third Person Camera Follow
-            const relativeCameraOffset = new THREE.Vector3(0, 5, -10);
-            const cameraOffset = relativeCameraOffset.applyMatrix4(player.matrixWorld);
-            camera.position.lerp(cameraOffset, 0.1);
+            // Orb Collection
+            orbs.forEach((orb, i) => {
+                orb.rotation.y += 0.02;
+                if(player.position.distanceTo(orb.position) < 1.5) {
+                    scene.remove(orb);
+                    orbs.splice(i, 1);
+                    score += 100;
+                    orbsFound++;
+                    document.getElementById('credits').innerText = "§ " + score;
+                    document.getElementById('orb-count').innerText = "ORBS COLLECTED: " + orbsFound;
+                    spawnOrb(); // Spawn new one
+                    flashMsg();
+                }
+            });
+
+            // Camera
+            const camTarget = new THREE.Vector3(0, 5, -12).applyMatrix4(player.matrixWorld);
+            camera.position.lerp(camTarget, 0.1);
             camera.lookAt(player.position);
 
             renderer.render(scene, camera);
         }
+
+        function flashMsg() {
+            const m = document.getElementById('msg');
+            m.style.opacity = 1;
+            setTimeout(() => m.style.opacity = 0, 1000);
+        }
+        
         animate();
     </script>
 </body>
 </html>
-<script type="module">
-    import * as THREE from 'three';
-    const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x020205); // Deep Space Black
-
-    // STARS
-    const starGeo = new THREE.BufferGeometry();
-    const starCoords = [];
-    for(let i=0; i<5000; i++) {
-        starCoords.push((Math.random()-0.5)*1000, (Math.random()-0.5)*1000, (Math.random()-0.5)*1000);
-    }
-    starGeo.setAttribute('position', new THREE.Float32BufferAttribute(starCoords, 3));
-    const stars = new THREE.Points(starGeo, new THREE.PointsMaterial({color: 0xffffff, size: 0.7}));
-    scene.add(stars);
-
-    // ... (rest of the astronaut and movement code)
-</script>
