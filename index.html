@@ -135,3 +135,20 @@
     </script>
 </body>
 </html>
+<script type="module">
+    import * as THREE from 'three';
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x020205); // Deep Space Black
+
+    // STARS
+    const starGeo = new THREE.BufferGeometry();
+    const starCoords = [];
+    for(let i=0; i<5000; i++) {
+        starCoords.push((Math.random()-0.5)*1000, (Math.random()-0.5)*1000, (Math.random()-0.5)*1000);
+    }
+    starGeo.setAttribute('position', new THREE.Float32BufferAttribute(starCoords, 3));
+    const stars = new THREE.Points(starGeo, new THREE.PointsMaterial({color: 0xffffff, size: 0.7}));
+    scene.add(stars);
+
+    // ... (rest of the astronaut and movement code)
+</script>
